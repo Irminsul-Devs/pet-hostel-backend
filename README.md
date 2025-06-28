@@ -1,4 +1,3 @@
-```markdown
 # Pet Hostel Backend API
 
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)
@@ -121,4 +120,3 @@ We welcome contributions! Please follow these steps:
 ## 📜 License
 
 This project is licensed under the **ISC License** © 2025 Irminsul Devs
-```
