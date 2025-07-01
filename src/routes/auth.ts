@@ -194,5 +194,74 @@ router.delete('/delete-staff/:id', async (req, res) => {
   }
 });
 
+// GET /api/auth/user/:id - fetch user by ID
+router.get('/user/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT id, name, email, mobile, dob, address, role FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error fetching user:', err);
+    res.status(500).json({ message: 'Server error while fetching user' });
+  }
+});
+// PUT /api/auth/user/:id – Update customer profile
+router.put('/user/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, mobile, dob, address } = req.body;
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE users 
+       SET name = ?, mobile = ?, dob = ?, address = ? 
+       WHERE id = ? AND role = 'customer'`,
+      [name, mobile, dob, address, id]
+    );
+
+    if ((result as any).affectedRows === 0) {
+      return res.status(404).json({ message: 'User not found or no changes' });
+    }
+
+    res.json({ message: 'Profile updated successfully' });
+  } catch (err) {
+    console.error("Update user profile error:", err);
+    res.status(500).json({ message: 'Server error while updating profile' });
+  }
+});
+// PUT /api/auth/change-password/:id
+router.put('/change-password/:id', async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const [users]: any = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = users[0];
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await pool.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Password update error:', err);
+    res.status(500).json({ message: 'Server error while updating password' });
+  }
+});
 
 export default router;
