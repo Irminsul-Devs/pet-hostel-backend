@@ -109,4 +109,90 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+router.post('/add-staff', async (req, res) => {
+  const { name, email, password, mobile, dob, address } = req.body;
+  const role = 'staff'; // Forcefully set to staff regardless of input
+
+  try {
+    const [existing]: any = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const [result]: any = await pool.query(
+      'INSERT INTO users (name, email, password, mobile, dob, address, role) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, hashedPassword, mobile, dob, address, role]
+    );
+
+    const [newStaff]: any = await pool.query(
+      'SELECT id, name, email, mobile, dob, address FROM users WHERE id = ?',
+      [result.insertId]
+    );
+
+    res.status(201).json({
+      message: 'Staff added successfully',
+      staff: newStaff[0],
+    });
+  } catch (err) {
+    console.error('Add staff error:', err);
+    res.status(500).json({ message: 'Server error while adding staff' });
+  }
+});
+
+
+router.put('/update-staff/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, dob, mobile, email, address } = req.body;
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE users SET name = ?, dob = ?, mobile = ?, email = ?, address = ?
+       WHERE id = ? AND role = 'staff'`,
+      [name, dob, mobile, email, address, id]
+    );
+
+    res.json({ message: "Staff updated successfully" });
+  } catch (err) {
+    console.error("Error updating staff:", err);
+    res.status(500).json({ message: "Failed to update staff" });
+  }
+});
+
+// GET /api/auth/staff – Get all staff users
+router.get('/staff', async (req, res) => {
+  try {
+    const [rows]: any = await pool.query(
+      "SELECT id, name, dob, address, email, mobile FROM users WHERE role = 'staff'"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching staff:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// DELETE /api/auth/delete-staff/:id
+router.delete('/delete-staff/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await pool.query(
+      'DELETE FROM users WHERE id = ? AND role = "staff"',
+      [id]
+    );
+
+    if ((result as any).affectedRows === 0) {
+      return res.status(404).json({ message: 'Staff not found or already deleted' });
+    }
+
+    res.json({ message: 'Staff deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting staff:', err);
+    res.status(500).json({ message: 'Server error while deleting staff' });
+  }
+});
+
+
 export default router;
