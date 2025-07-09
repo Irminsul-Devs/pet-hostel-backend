@@ -37,9 +37,6 @@ class BookingController {
       const newBooking = await BookingModel.create({
         booking_date:
           bookingData.bookingDate || new Date().toISOString().split("T")[0],
-        name: bookingData.name || bookingData.ownerName,
-        mobile: bookingData.mobile || bookingData.ownerMobile,
-        email: bookingData.email || bookingData.ownerEmail,
         remarks: bookingData.remarks,
         owner_name: bookingData.ownerName,
         owner_mobile: bookingData.ownerMobile,
@@ -56,6 +53,7 @@ class BookingController {
         pet_food: bookingData.petFood,
         vaccination_certificate: bookingData.vaccinationCertificate,
         pet_vaccinated: bookingData.petVaccinated,
+        amount: bookingData.amount || 0.0,
         user_id: userId,
       });
 
@@ -178,9 +176,6 @@ class BookingController {
         bookingId,
         {
           booking_date: bookingData.bookingDate || existingBooking.booking_date,
-          name: bookingData.name || existingBooking.name,
-          mobile: bookingData.mobile || existingBooking.mobile,
-          email: bookingData.email || existingBooking.email,
           remarks: bookingData.remarks || existingBooking.remarks,
           owner_name: bookingData.ownerName || existingBooking.owner_name,
           owner_mobile: bookingData.ownerMobile || existingBooking.owner_mobile,
@@ -201,6 +196,7 @@ class BookingController {
             existingBooking.vaccination_certificate,
           pet_vaccinated:
             bookingData.petVaccinated ?? existingBooking.pet_vaccinated,
+          amount: bookingData.amount ?? existingBooking.amount,
         },
         userId
       );

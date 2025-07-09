@@ -1,9 +1,6 @@
 export interface IBooking {
   id?: number;
   bookingDate?: string;
-  name?: string;
-  mobile?: string;
-  email?: string;
   remarks?: string;
   ownerName: string;
   ownerMobile: string;
@@ -20,5 +17,6 @@ export interface IBooking {
   petFood: string;
   vaccinationCertificate?: string | null;
   petVaccinated: boolean;
+  amount?: number;
   userId?: number;
 }

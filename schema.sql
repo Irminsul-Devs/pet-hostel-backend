@@ -12,9 +12,6 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS bookings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   booking_date DATE NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  mobile VARCHAR(20) NOT NULL,
-  email VARCHAR(255) NOT NULL,
   remarks TEXT,
   owner_name VARCHAR(255) NOT NULL,
   owner_mobile VARCHAR(20) NOT NULL,
@@ -31,6 +28,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   pet_food TEXT NOT NULL,
   vaccination_certificate MEDIUMTEXT,
   pet_vaccinated BOOLEAN NOT NULL DEFAULT FALSE,
+  amount DECIMAL(10, 2) DEFAULT 0.0,
   user_id INT,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );

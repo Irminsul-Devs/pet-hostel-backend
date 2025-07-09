@@ -4,9 +4,6 @@ import db from "../utils/db"; // Adjust the import path as necessary
 interface Booking extends RowDataPacket {
   id: number;
   booking_date: string;
-  name: string;
-  mobile: string;
-  email: string;
   remarks: string;
   owner_name: string;
   owner_mobile: string;
@@ -23,6 +20,7 @@ interface Booking extends RowDataPacket {
   pet_food: string;
   vaccination_certificate: string | null;
   pet_vaccinated: boolean;
+  amount: number;
   user_id: number;
 }
 
