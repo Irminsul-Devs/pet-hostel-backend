@@ -14,6 +14,8 @@ const ERRORS = {
   INVALID_CREDENTIALS: "Invalid credentials",
   SERVER_ERROR: "Server error during operation",
   USER_NOT_FOUND: "User not found",
+  NOT_AUTHORIZED: "Not authorized to perform this action",
+  HAS_BOOKINGS: "Cannot delete customer with active bookings",
 };
 
 router.post("/signup", async (req, res) => {
@@ -188,6 +190,19 @@ router.get("/staff", async (req, res) => {
     res.json(rows);
   } catch (err) {
     console.error("Error fetching staff:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/auth/customers – Get all customer users
+router.get("/customers", async (req, res) => {
+  try {
+    const [rows]: any = await pool.query(
+      "SELECT id, name, email FROM users WHERE role = 'customer'"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching customers:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -382,4 +397,80 @@ router.put("/change-password/:id", async (req, res) => {
     res.status(500).json({ error: ERRORS.SERVER_ERROR });
   }
 });
+
+// Get users by role (protected route)
+router.get("/users/role/:role", async (req, res) => {
+  try {
+    const { role } = req.params;
+
+    // Verify that role is valid
+    if (!["customer", "staff", "admin"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role specified" });
+    }
+
+    // Get users with the specified role
+    const [users]: any = await pool.query(
+      "SELECT id, name, email, mobile, dob, address, role FROM users WHERE role = ?",
+      [role]
+    );
+
+    // Remove sensitive information
+    const safeUsers = users.map((user: any) => ({
+      ...user,
+      password: undefined,
+    }));
+
+    res.json(safeUsers);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: ERRORS.SERVER_ERROR });
+  }
+});
+
+// DELETE /api/auth/user/:id - Delete customer
+router.delete("/user/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Check if user exists and is a customer
+    const [user]: any = await pool.query(
+      "SELECT role FROM users WHERE id = ?",
+      [id]
+    );
+
+    if (user.length === 0) {
+      return res.status(404).json({ message: ERRORS.USER_NOT_FOUND });
+    }
+
+    if (user[0].role !== "customer") {
+      return res.status(403).json({ message: ERRORS.NOT_AUTHORIZED });
+    }
+
+    // Check for active or future bookings
+    const [bookings]: any = await pool.query(
+      "SELECT id FROM bookings WHERE customer_id = ? AND booking_to >= CURRENT_DATE()",
+      [id]
+    );
+
+    if (bookings.length > 0) {
+      return res.status(400).json({ message: ERRORS.HAS_BOOKINGS });
+    }
+
+    // Delete the customer
+    const [result]: any = await pool.query(
+      "DELETE FROM users WHERE id = ? AND role = 'customer'",
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: ERRORS.USER_NOT_FOUND });
+    }
+
+    res.json({ message: "Customer deleted successfully" });
+  } catch (err) {
+    console.error("Delete customer error:", err);
+    res.status(500).json({ message: ERRORS.SERVER_ERROR });
+  }
+});
+
 export default router;
