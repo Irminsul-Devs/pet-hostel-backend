@@ -38,11 +38,6 @@ class BookingController {
         booking_date:
           bookingData.bookingDate || new Date().toISOString().split("T")[0],
         remarks: bookingData.remarks,
-        owner_name: bookingData.ownerName,
-        owner_mobile: bookingData.ownerMobile,
-        owner_dob: bookingData.ownerDob,
-        owner_email: bookingData.ownerEmail,
-        owner_address: bookingData.ownerAddress,
         pet_name: bookingData.petName,
         pet_type: bookingData.petType,
         booking_from: bookingData.bookingFrom,
@@ -55,6 +50,7 @@ class BookingController {
         pet_vaccinated: bookingData.petVaccinated,
         amount: bookingData.amount || 0.0,
         user_id: userId,
+        customer_id: bookingData.customerId || userId, // If no customer ID provided, assume booking for self
       });
 
       res.status(201).json({
@@ -177,12 +173,6 @@ class BookingController {
         {
           booking_date: bookingData.bookingDate || existingBooking.booking_date,
           remarks: bookingData.remarks || existingBooking.remarks,
-          owner_name: bookingData.ownerName || existingBooking.owner_name,
-          owner_mobile: bookingData.ownerMobile || existingBooking.owner_mobile,
-          owner_dob: bookingData.ownerDob || existingBooking.owner_dob,
-          owner_email: bookingData.ownerEmail || existingBooking.owner_email,
-          owner_address:
-            bookingData.ownerAddress || existingBooking.owner_address,
           pet_name: bookingData.petName || existingBooking.pet_name,
           pet_type: bookingData.petType || existingBooking.pet_type,
           booking_from: bookingData.bookingFrom || existingBooking.booking_from,
@@ -197,6 +187,7 @@ class BookingController {
           pet_vaccinated:
             bookingData.petVaccinated ?? existingBooking.pet_vaccinated,
           amount: bookingData.amount ?? existingBooking.amount,
+          customer_id: bookingData.customerId || existingBooking.customer_id,
         },
         userId
       );
