@@ -315,7 +315,9 @@ router.get("/user/:id", async (req, res) => {
 
   try {
     const [rows]: any = await pool.query(
-      "SELECT id, name, email, mobile, dob, address, role FROM users WHERE id = ?",
+      `SELECT id, name, email, mobile, DATE_FORMAT(dob, '%Y-%m-%d') as dob, address, role 
+       FROM users 
+       WHERE id = ?`,
       [id]
     );
 
@@ -323,12 +325,14 @@ router.get("/user/:id", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(rows[0]);
+    res.json(rows[0]); 
   } catch (err) {
     console.error("Error fetching user:", err);
     res.status(500).json({ message: "Server error while fetching user" });
   }
 });
+
+
 // PUT /api/auth/user/:id – Update customer profile
 router.put("/user/:id", async (req, res) => {
   const { id } = req.params;
