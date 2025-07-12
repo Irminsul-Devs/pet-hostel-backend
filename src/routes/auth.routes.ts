@@ -163,6 +163,24 @@ router.post("/add-staff", async (req, res) => {
   }
 });
 
+router.put("/update-staff/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, dob, mobile, email, address } = req.body;
+
+  try {
+    const [result] = await pool.query(
+      `UPDATE users SET name = ?, dob = ?, mobile = ?, email = ?, address = ?
+       WHERE id = ? AND role = 'staff'`,
+      [name, dob, mobile, email, address, id]
+    );
+
+    res.json({ message: "Staff updated successfully" });
+  } catch (err) {
+    console.error("Error updating staff:", err);
+    res.status(500).json({ message: "Failed to update staff" });
+  }
+});
+
 // GET /api/auth/staff – Get all staff users
 router.get("/staff", async (req, res) => {
   try {
