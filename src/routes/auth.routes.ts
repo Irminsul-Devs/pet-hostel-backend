@@ -163,24 +163,6 @@ router.post("/add-staff", async (req, res) => {
   }
 });
 
-router.put("/update-staff/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name, dob, mobile, email, address } = req.body;
-
-  try {
-    const [result] = await pool.query(
-      `UPDATE users SET name = ?, dob = ?, mobile = ?, email = ?, address = ?
-       WHERE id = ? AND role = 'staff'`,
-      [name, dob, mobile, email, address, id]
-    );
-
-    res.json({ message: "Staff updated successfully" });
-  } catch (err) {
-    console.error("Error updating staff:", err);
-    res.status(500).json({ message: "Failed to update staff" });
-  }
-});
-
 // GET /api/auth/staff – Get all staff users
 router.get("/staff", async (req, res) => {
   try {
@@ -325,26 +307,41 @@ router.get("/user/:id", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(rows[0]); 
+    res.json(rows[0]);
   } catch (err) {
     console.error("Error fetching user:", err);
     res.status(500).json({ message: "Server error while fetching user" });
   }
 });
 
-
-// PUT /api/auth/user/:id – Update customer profile
+// PUT /api/auth/user/:id – Update user profile (for both customers and staff)
 router.put("/user/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, mobile, dob, address } = req.body;
+  const { name, mobile, dob, address, email } = req.body;
 
   try {
-    const [result] = await pool.query(
-      `UPDATE users 
-       SET name = ?, mobile = ?, dob = ?, address = ? 
-       WHERE id = ? AND role = 'customer'`,
-      [name, mobile, dob, address, id]
+    // First check if user exists and get their role
+    const [users]: any = await pool.query(
+      "SELECT role FROM users WHERE id = ?",
+      [id]
     );
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userRole = users[0].role;
+
+    // Simply ignore the email field in the request, since it's disabled in the frontend
+    let updateQuery = `UPDATE users 
+                      SET name = ?, mobile = ?, dob = ?, address = ?`;
+    let queryParams = [name, mobile, dob, address];
+
+    // Add WHERE clause
+    updateQuery += ` WHERE id = ? AND (role = 'customer' OR role = 'staff')`;
+    queryParams.push(id);
+
+    const [result] = await pool.query(updateQuery, queryParams);
 
     if ((result as any).affectedRows === 0) {
       return res.status(404).json({ message: "User not found or no changes" });
