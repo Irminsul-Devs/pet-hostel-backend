@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes";
 import bookingRoutes from "./routes/booking.routes";
+import analyticsRoutes from "./routes/analytics.routes";
+
 
 dotenv.config();
 
@@ -15,6 +17,7 @@ app.use(express.json({ limit: "5mb" }));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Error handling middleware
 app.use(
