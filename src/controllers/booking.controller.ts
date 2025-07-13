@@ -130,7 +130,8 @@ class BookingController {
 
   static async updateBooking(req: Request, res: Response) {
     try {
-      const userId = req.user?.role === "admin" ? undefined : req.user?.id;
+      // Allow staff and admin to update any booking, only restrict customers
+      const userId = req.user?.role === "customer" ? req.user?.id : undefined;
       const bookingId = parseInt(req.params.id);
       const bookingData: IBooking = req.body;
 
@@ -208,7 +209,8 @@ class BookingController {
 
   static async deleteBooking(req: Request, res: Response) {
     try {
-      const userId = req.user?.role === "admin" ? undefined : req.user?.id;
+      // Allow staff and admin to delete any booking, only restrict customers
+      const userId = req.user?.role === "customer" ? req.user?.id : undefined;
       const deleted = await BookingModel.delete(
         parseInt(req.params.id),
         userId
