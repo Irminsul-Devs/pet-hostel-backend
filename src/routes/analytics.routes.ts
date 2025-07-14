@@ -10,5 +10,7 @@ router.use(authenticateToken);
 
 // Route for admin dashboard analytics
 router.get("/admin-dashboard", AnalyticsController.getAdminDashboardStats);
+router.get("/bookings/all", AnalyticsController.getAllBookingsWithDetails);
+
 
 export default router;
