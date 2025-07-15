@@ -4,7 +4,6 @@ import { authenticateToken } from "../controllers/middlewares/auth.middleware";
 
 const router = Router();
 
-// Apply authentication middleware to all booking routes
 router.use(authenticateToken);
 
 // Create a new booking

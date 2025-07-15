@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import db from "../utils/db";
 
 class AnalyticsController {
-  // Admin Dashboard Stats (existing)
+  // Admin Dashboard Stats
   static async getAdminDashboardStats(req: Request, res: Response) {
     try {
       // 1. Most Regular Customer
@@ -14,22 +14,20 @@ class AnalyticsController {
          ORDER BY total_bookings DESC
          LIMIT 1`
       );
-// analytics.controller.ts
 
-const [petsInCareRows] = await db.query(`
-  SELECT 
-    pet_type AS type, 
-    COUNT(*) AS count
-  FROM bookings
-  WHERE DATE(booking_from) <= CURRENT_DATE() 
-    AND DATE(booking_to) >= CURRENT_DATE()
-  GROUP BY pet_type;
-`);
+      const [petsInCareRows] = await db.query(`
+        SELECT 
+          pet_type AS type, 
+          COUNT(*) AS count
+        FROM bookings
+        WHERE DATE(booking_from) <= CURRENT_DATE() 
+          AND DATE(booking_to) >= CURRENT_DATE()
+        GROUP BY pet_type;
+      `);
 
-console.log("Pets in Care:", petsInCareRows);
+      console.log("Pets in Care:", petsInCareRows);
 
-const petsInCare = petsInCareRows as Array<{ type: string; count: number }>;
-
+      const petsInCare = petsInCareRows as Array<{ type: string; count: number }>;
 
       // 3. Most Preferred Service
       const [serviceRows]: any = await db.query(`SELECT services FROM bookings`);
@@ -66,28 +64,25 @@ const petsInCare = petsInCareRows as Array<{ type: string; count: number }>;
           AND YEAR(booking_date) = YEAR(CURDATE())
       `);
 
-   // 6. Top Pet Type
-const [topPetTypesResult]: any = await db.query(`
-  SELECT pet_type
-  FROM (
-    SELECT pet_type, COUNT(*) AS count
-    FROM bookings
-    GROUP BY pet_type
-  ) AS counts
-  WHERE count = (
-    SELECT MAX(count)
-    FROM (
-      SELECT COUNT(*) AS count
-      FROM bookings
-      GROUP BY pet_type
-    ) AS inner_counts
-  );
-`);
+      // 6. Top Pet Type
+      const [topPetTypesResult]: any = await db.query(`
+        SELECT pet_type
+        FROM (
+          SELECT pet_type, COUNT(*) AS count
+          FROM bookings
+          GROUP BY pet_type
+        ) AS counts
+        WHERE count = (
+          SELECT MAX(count)
+          FROM (
+            SELECT COUNT(*) AS count
+            FROM bookings
+            GROUP BY pet_type
+          ) AS inner_counts
+        );
+      `);
 
-const topPetTypes = topPetTypesResult.map((row: any) => row.pet_type);
-
-
-
+      const topPetTypes = topPetTypesResult.map((row: any) => row.pet_type);
 
       // 7. Upcoming Pet Birthdays
       const [upcomingBirthdays]: any = await db.query(`
@@ -103,15 +98,16 @@ const topPetTypes = topPetTypesResult.map((row: any) => row.pet_type);
           AND DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 7 DAY), '%m-%d')
         GROUP BY b.pet_name, b.pet_dob, u.name
       `);
-res.json({
-  mostRegularCustomer: topCustomer[0] || null,
-  petsInCare: petsInCare || [],
-  mostPreferredService,
-  upcomingPetBirthdays: upcomingBirthdays || [],
-  totalBookingsThisMonth: bookingsThisMonth[0]?.total || 0,
-  totalRevenueThisMonth: revenueThisMonth[0]?.total || 0,
-   topPetType: topPetTypes.join(", ") || null,
-});
+
+      res.json({
+        mostRegularCustomer: topCustomer[0] || null,
+        petsInCare: petsInCare || [],
+        mostPreferredService,
+        upcomingPetBirthdays: upcomingBirthdays || [],
+        totalBookingsThisMonth: bookingsThisMonth[0]?.total || 0,
+        totalRevenueThisMonth: revenueThisMonth[0]?.total || 0,
+        topPetType: topPetTypes.join(", ") || null,
+      });
 
     } catch (error) {
       console.error("Admin Dashboard Stats Error:", error);
@@ -119,7 +115,7 @@ res.json({
     }
   }
 
-  // ✅ NEW: Full Booking Details for Modal
+  // Full Booking Details for Modal
   static async getAllBookingsWithDetails(req: Request, res: Response) {
     try {
       const [rows]: any = await db.query(
