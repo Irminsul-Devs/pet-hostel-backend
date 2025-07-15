@@ -1,8 +1,8 @@
-// controllers/analytics.controller.ts
 import { Request, Response } from "express";
 import db from "../utils/db";
 
 class AnalyticsController {
+  // Admin Dashboard Stats (existing)
   static async getAdminDashboardStats(req: Request, res: Response) {
     try {
       // 1. Most Regular Customer
@@ -15,22 +15,21 @@ class AnalyticsController {
          LIMIT 1`
       );
 
-      // 2. Pets Currently in Care (REPLACED Top Staff metric)
-const [petsInCareRows] = await db.query(`
-  SELECT 
-    pet_type as type, 
-    COUNT(*) as count
-  FROM bookings
-  WHERE booking_from <= CURDATE() 
-    AND booking_to >= CURDATE()
-  GROUP BY pet_type
-`);
+      // 2. Pets Currently in Care
+      const [petsInCareRows] = await db.query(`
+        SELECT 
+          pet_type as type, 
+          COUNT(*) as count
+        FROM bookings
+        WHERE booking_from <= CURDATE() 
+          AND booking_to >= CURDATE()
+        GROUP BY pet_type
+      `);
 
-// Cast the result to our expected type
-const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
+      const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
 
+      // 3. Most Preferred Service
       const [serviceRows]: any = await db.query(`SELECT services FROM bookings`);
-
       const serviceCount: Record<string, number> = {};
       serviceRows.forEach((row: any) => {
         const services: string[] = JSON.parse(row.services || "[]");
@@ -48,6 +47,7 @@ const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
         }
       }
 
+      // 4. Monthly Bookings Count
       const [bookingsThisMonth]: any = await db.query(`
         SELECT COUNT(*) AS total
         FROM bookings
@@ -55,6 +55,7 @@ const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
           AND YEAR(booking_date) = YEAR(CURDATE())
       `);
 
+      // 5. Monthly Revenue
       const [revenueThisMonth]: any = await db.query(`
         SELECT SUM(amount) AS total
         FROM bookings
@@ -62,14 +63,30 @@ const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
           AND YEAR(booking_date) = YEAR(CURDATE())
       `);
 
-      const [topPetType]: any = await db.query(`
-        SELECT pet_type, COUNT(*) AS count
-        FROM bookings
-        GROUP BY pet_type
-        ORDER BY count DESC
-        LIMIT 1
-      `);
+   // 6. Top Pet Type
+const [topPetTypesResult]: any = await db.query(`
+  SELECT pet_type
+  FROM (
+    SELECT pet_type, COUNT(*) AS count
+    FROM bookings
+    GROUP BY pet_type
+  ) AS counts
+  WHERE count = (
+    SELECT MAX(count)
+    FROM (
+      SELECT COUNT(*) AS count
+      FROM bookings
+      GROUP BY pet_type
+    ) AS inner_counts
+  );
+`);
 
+const topPetTypes = topPetTypesResult.map((row: any) => row.pet_type);
+
+
+
+
+      // 7. Upcoming Pet Birthdays
       const [upcomingBirthdays]: any = await db.query(`
         SELECT 
           b.pet_name AS petName,
@@ -83,19 +100,65 @@ const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
           AND DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 7 DAY), '%m-%d')
         GROUP BY b.pet_name, b.pet_dob, u.name
       `);
+res.json({
+  mostRegularCustomer: topCustomer[0] || null,
+  petsInCare: petsInCare || [],
+  mostPreferredService,
+  upcomingPetBirthdays: upcomingBirthdays || [],
+  totalBookingsThisMonth: bookingsThisMonth[0]?.total || 0,
+  totalRevenueThisMonth: revenueThisMonth[0]?.total || 0,
+   topPetType: topPetTypes.join(", ") || null,
+});
 
-      res.json({
-        mostRegularCustomer: topCustomer[0] || null,
-      petsInCare: petsInCare || [],
-        mostPreferredService,
-        upcomingPetBirthdays: upcomingBirthdays || [],
-        totalBookingsThisMonth: bookingsThisMonth[0]?.total || 0,
-        totalRevenueThisMonth: revenueThisMonth[0]?.total || 0,
-        topPetType: topPetType[0]?.pet_type || null
-      });
     } catch (error) {
       console.error("Admin Dashboard Stats Error:", error);
       res.status(500).json({ message: "Error fetching admin stats" });
+    }
+  }
+
+  // ✅ NEW: Full Booking Details for Modal
+  static async getAllBookingsWithDetails(req: Request, res: Response) {
+    try {
+      const [rows]: any = await db.query(
+        `SELECT 
+           b.*, 
+           u.name AS customerName, 
+           u.email AS customerEmail, 
+           u.mobile AS customerMobile,
+           GROUP_CONCAT(bs.service_name) AS services
+         FROM bookings b
+         LEFT JOIN users u ON b.customer_id = u.id
+         LEFT JOIN booking_services bs ON b.id = bs.booking_id
+         GROUP BY b.id
+         ORDER BY b.booking_date DESC`
+      );
+
+      const bookings = rows.map((b: any) => ({
+        id: b.id,
+        amount: b.amount,
+        bookingDate: b.booking_date,
+        bookingFrom: b.booking_from,
+        bookingTo: b.booking_to,
+        user_id: b.user_id,
+        customer: {
+          name: b.customerName,
+          email: b.customerEmail,
+          mobile: b.customerMobile,
+        },
+        services: b.services ? b.services.split(",") : [],
+        petName: b.pet_name,
+        petType: b.pet_type,
+        petAge: b.pet_age,
+        petVaccinated: b.pet_vaccinated,
+        petFood: b.pet_food,
+        remarks: b.remarks,
+        vaccinationCertificate: b.vaccination_certificate,
+      }));
+
+      res.json(bookings);
+    } catch (err) {
+      console.error("Error fetching bookings with details:", err);
+      res.status(500).json({ message: "Error fetching detailed bookings" });
     }
   }
 }
