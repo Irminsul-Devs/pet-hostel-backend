@@ -7,7 +7,6 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "secret_key";
 const TOKEN_EXPIRY = "8h";
 
-// Error messages as constants
 const ERRORS = {
   EMAIL_EXISTS: "Email already registered",
   MISSING_FIELDS: (role: string) => `Missing required fields for ${role}`,
@@ -131,7 +130,7 @@ router.post("/login", async (req, res) => {
 
 router.post("/add-staff", async (req, res) => {
   const { name, email, password, mobile, dob, address } = req.body;
-  const role = "staff"; // Forcefully set to staff regardless of input
+  const role = "staff";
 
   try {
     const [existing]: any = await pool.query(
@@ -181,7 +180,6 @@ router.put("/update-staff/:id", async (req, res) => {
   }
 });
 
-// GET /api/auth/staff – Get all staff users
 router.get("/staff", async (req, res) => {
   try {
     const [rows]: any = await pool.query(
@@ -194,7 +192,6 @@ router.get("/staff", async (req, res) => {
   }
 });
 
-// GET /api/auth/customers – Get all customer users
 router.get("/customers", async (req, res) => {
   try {
     const [rows]: any = await pool.query(
@@ -207,7 +204,6 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-// DELETE /api/auth/delete-staff/:id
 router.delete("/delete-staff/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -230,13 +226,10 @@ router.delete("/delete-staff/:id", async (req, res) => {
   }
 });
 
-// Change Password Route - using PUT method with ID in URL for better REST compliance
-
 // Reset password route (for admins to reset staff passwords)
 router.post("/reset-password", async (req, res) => {
   const { userId, newPassword } = req.body;
 
-  // Validate request
   if (!userId || !newPassword) {
     return res
       .status(400)
@@ -273,7 +266,6 @@ router.post("/reset-password", async (req, res) => {
 router.post("/reset-password-by-email", async (req, res) => {
   const { email, newPassword } = req.body;
 
-  // Validate request
   if (!email || !newPassword) {
     return res
       .status(400)
@@ -309,7 +301,6 @@ router.post("/reset-password-by-email", async (req, res) => {
   }
 });
 
-// GET /api/auth/user/:id - fetch user by ID
 router.get("/user/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -332,7 +323,6 @@ router.get("/user/:id", async (req, res) => {
   }
 });
 
-// PUT /api/auth/user/:id – Update user profile (for both customers and staff)
 router.put("/user/:id", async (req, res) => {
   const { id } = req.params;
   const { name, mobile, dob, address, email } = req.body;
@@ -350,12 +340,10 @@ router.put("/user/:id", async (req, res) => {
 
     const userRole = users[0].role;
 
-    // Simply ignore the email field in the request, since it's disabled in the frontend
     let updateQuery = `UPDATE users 
                       SET name = ?, mobile = ?, dob = ?, address = ?`;
     let queryParams = [name, mobile, dob, address];
 
-    // Add WHERE clause
     updateQuery += ` WHERE id = ? AND (role = 'customer' OR role = 'staff')`;
     queryParams.push(id);
 
@@ -371,19 +359,17 @@ router.put("/user/:id", async (req, res) => {
     res.status(500).json({ message: "Server error while updating profile" });
   }
 });
-// PUT /api/auth/change-password/:id - Change user password
+
 router.put("/change-password/:id", async (req, res) => {
   const { id } = req.params;
   const { currentPassword, newPassword } = req.body;
 
-  // Validate request body
   if (!currentPassword || !newPassword) {
     return res
       .status(400)
       .json({ message: "Current password and new password are required" });
   }
 
-  // Validate new password requirements (you can adjust these requirements)
   if (newPassword.length < 6) {
     return res
       .status(400)
@@ -446,12 +432,11 @@ router.get("/users/role/:role", async (req, res) => {
   }
 });
 
-// DELETE /api/auth/user/:id - Delete customer
+// Delete customer
 router.delete("/user/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Check if user exists and is a customer
     const [user]: any = await pool.query(
       "SELECT role FROM users WHERE id = ?",
       [id]

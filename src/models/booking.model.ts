@@ -1,5 +1,5 @@
 import { RowDataPacket } from "mysql2";
-import db from "../utils/db"; // Adjust the import path as necessary
+import db from "../utils/db";
 
 interface Booking extends RowDataPacket {
   id: number;
@@ -74,7 +74,6 @@ class BookingModel {
 
     const [rows] = await db.query<BookingWithCustomer[]>(query, params);
 
-    // Transform the flat structure into nested customer object
     return rows.map((row) => ({
       ...row,
       customer: {
@@ -113,7 +112,6 @@ class BookingModel {
     const [rows] = await db.query<BookingWithCustomer[]>(query, params);
     if (!rows[0]) return null;
 
-    // Transform to include nested customer object
     return {
       ...rows[0],
       customer: {
