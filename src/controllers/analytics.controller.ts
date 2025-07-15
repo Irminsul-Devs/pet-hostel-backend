@@ -14,19 +14,22 @@ class AnalyticsController {
          ORDER BY total_bookings DESC
          LIMIT 1`
       );
+// analytics.controller.ts
 
-      // 2. Pets Currently in Care
-      const [petsInCareRows] = await db.query(`
-        SELECT 
-          pet_type as type, 
-          COUNT(*) as count
-        FROM bookings
-        WHERE booking_from <= CURDATE() 
-          AND booking_to >= CURDATE()
-        GROUP BY pet_type
-      `);
+const [petsInCareRows] = await db.query(`
+  SELECT 
+    pet_type AS type, 
+    COUNT(*) AS count
+  FROM bookings
+  WHERE DATE(booking_from) <= CURRENT_DATE() 
+    AND DATE(booking_to) >= CURRENT_DATE()
+  GROUP BY pet_type;
+`);
 
-      const petsInCare = (petsInCareRows as Array<{ type: string; count: number }>);
+console.log("Pets in Care:", petsInCareRows);
+
+const petsInCare = petsInCareRows as Array<{ type: string; count: number }>;
+
 
       // 3. Most Preferred Service
       const [serviceRows]: any = await db.query(`SELECT services FROM bookings`);
