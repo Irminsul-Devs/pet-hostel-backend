@@ -27,7 +27,26 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     if (err) {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    
+
+    req.user = user as UserPayload;
+    next();
+  });
+};
+
+export const optionalAuthenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    next();
+    return
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'secret_key', (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+
     req.user = user as UserPayload;
     next();
   });

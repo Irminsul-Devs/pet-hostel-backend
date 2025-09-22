@@ -1,10 +1,10 @@
 import { Router } from "express";
 import BookingController from "../controllers/booking.controller";
-import { authenticateToken } from "../controllers/middlewares/auth.middleware";
+import { authenticateToken, optionalAuthenticateToken } from "../controllers/middlewares/auth.middleware";
 
 const router = Router();
 
-router.use(authenticateToken);
+router.use(optionalAuthenticateToken);
 
 // Create a new booking
 router.post("/", BookingController.createBooking);
